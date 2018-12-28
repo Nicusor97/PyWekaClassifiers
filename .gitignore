@@ -1,0 +1,11 @@
+*.pyc
+*.pyo
+/.project
+/.pydevproject
+/.settings
+/pywekaclassifiers.egg-info
+/dist
+/.tox/
+*.out
+*.geany
+/.env

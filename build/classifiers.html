@@ -1,0 +1,232 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pywekaclassifiers arff documentation &mdash; pywekaclassifiers 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pywekaclassifiers 0.0.1 documentation" href="index.html" />
+    <link rel="prev" title="pywekaclassifiers arff documentation" href="arff.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-pywekaclassifiers.classifiers">
+<span id="pywekaclassifiers-arff-documentation"></span><h1>pywekaclassifiers arff documentation<a class="headerlink" href="#module-pywekaclassifiers.classifiers" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pywekaclassifiers.classifiers.Classifier">
+<em class="property">class </em><code class="descclassname">pywekaclassifiers.classifiers.</code><code class="descname">Classifier</code><span class="sig-paren">(</span><em>name</em>, <em>ckargs=None</em>, <em>model_data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#Classifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.Classifier" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="classmethod">
+<dt id="pywekaclassifiers.classifiers.Classifier.load">
+<em class="property">classmethod </em><code class="descname">load</code><span class="sig-paren">(</span><em>fn</em>, <em>compress=True</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#Classifier.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.Classifier.load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pywekaclassifiers.classifiers.Classifier.load_raw">
+<em class="property">classmethod </em><code class="descname">load_raw</code><span class="sig-paren">(</span><em>model_fn</em>, <em>schema</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#Classifier.load_raw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.Classifier.load_raw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a trained classifier from the raw Weka model format.
+Must specify the model schema and classifier name, since
+these aren&#8217;t currently deduced from the model format.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.classifiers.Classifier.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>query_data</em>, <em>verbose=False</em>, <em>distribution=False</em>, <em>cleanup=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#Classifier.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.Classifier.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterates over the predicted values and probability (if supported).
+Each iteration yields a tuple of the form (prediction, probability).</p>
+<p>If the file is a test file (i.e. contains no query variables),
+then the tuple will be of the form (prediction, actual).</p>
+<p>See <a class="reference external" href="http://weka.wikispaces.com/Making+predictions">http://weka.wikispaces.com/Making+predictions</a>
+for further explanation on interpreting Weka prediction output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.classifiers.Classifier.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>fn</em>, <em>compress=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#Classifier.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.Classifier.save" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.classifiers.Classifier.test">
+<code class="descname">test</code><span class="sig-paren">(</span><em>test_data</em>, <em>verbose=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#Classifier.test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.Classifier.test" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.classifiers.Classifier.train">
+<code class="descname">train</code><span class="sig-paren">(</span><em>training_data</em>, <em>testing_data=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#Classifier.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.Classifier.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the classifier with new data.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pywekaclassifiers.classifiers.Classifier.training_correlation_coefficient">
+<code class="descname">training_correlation_coefficient</code><a class="headerlink" href="#pywekaclassifiers.classifiers.Classifier.training_correlation_coefficient" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pywekaclassifiers.classifiers.Classifier.training_mean_absolute_error">
+<code class="descname">training_mean_absolute_error</code><a class="headerlink" href="#pywekaclassifiers.classifiers.Classifier.training_mean_absolute_error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pywekaclassifiers.classifiers.EnsembleClassifier">
+<em class="property">class </em><code class="descclassname">pywekaclassifiers.classifiers.</code><code class="descname">EnsembleClassifier</code><span class="sig-paren">(</span><em>classes=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#EnsembleClassifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.EnsembleClassifier" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="pywekaclassifiers.classifiers.EnsembleClassifier.get_best_predictors">
+<code class="descname">get_best_predictors</code><span class="sig-paren">(</span><em>tolerance</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#EnsembleClassifier.get_best_predictors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.EnsembleClassifier.get_best_predictors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.classifiers.EnsembleClassifier.get_training_best">
+<code class="descname">get_training_best</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#EnsembleClassifier.get_training_best"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.EnsembleClassifier.get_training_best" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.classifiers.EnsembleClassifier.get_training_coverage">
+<code class="descname">get_training_coverage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#EnsembleClassifier.get_training_coverage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.EnsembleClassifier.get_training_coverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a ratio of classifiers that were able to be trained successfully.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.classifiers.EnsembleClassifier.get_training_errors">
+<code class="descname">get_training_errors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#EnsembleClassifier.get_training_errors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.EnsembleClassifier.get_training_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pywekaclassifiers.classifiers.EnsembleClassifier.load">
+<em class="property">classmethod </em><code class="descname">load</code><span class="sig-paren">(</span><em>fn</em>, <em>compress=True</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#EnsembleClassifier.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.EnsembleClassifier.load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.classifiers.EnsembleClassifier.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>query_data</em>, <em>tolerance=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#EnsembleClassifier.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.EnsembleClassifier.predict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.classifiers.EnsembleClassifier.train">
+<code class="descname">train</code><span class="sig-paren">(</span><em>training_data</em>, <em>testing_data=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#EnsembleClassifier.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.EnsembleClassifier.train" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="pywekaclassifiers.classifiers.PredictionError">
+<em class="property">exception </em><code class="descclassname">pywekaclassifiers.classifiers.</code><code class="descname">PredictionError</code><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#PredictionError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.PredictionError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="pywekaclassifiers.classifiers.PredictionResult">
+<em class="property">class </em><code class="descclassname">pywekaclassifiers.classifiers.</code><code class="descname">PredictionResult</code><span class="sig-paren">(</span><em>actual</em>, <em>predicted</em>, <em>probability</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#PredictionResult"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.PredictionResult" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="classmethod">
+<dt id="pywekaclassifiers.classifiers.PredictionResult.avg">
+<em class="property">classmethod </em><code class="descname">avg</code><span class="sig-paren">(</span><em>*instances</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#PredictionResult.avg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.PredictionResult.avg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pywekaclassifiers.classifiers.PredictionResult.certainty">
+<code class="descname">certainty</code><a class="headerlink" href="#pywekaclassifiers.classifiers.PredictionResult.certainty" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="pywekaclassifiers.classifiers.TrainingError">
+<em class="property">exception </em><code class="descclassname">pywekaclassifiers.classifiers.</code><code class="descname">TrainingError</code><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#TrainingError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.TrainingError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pywekaclassifiers.classifiers.cmp">
+<code class="descclassname">pywekaclassifiers.classifiers.</code><code class="descname">cmp</code><span class="sig-paren">(</span><em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#cmp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.cmp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pywekaclassifiers.classifiers.get_weka_accuracy">
+<code class="descclassname">pywekaclassifiers.classifiers.</code><code class="descname">get_weka_accuracy</code><span class="sig-paren">(</span><em>arff_fn</em>, <em>arff_test_fn</em>, <em>cls</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/classifiers.html#get_weka_accuracy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.classifiers.get_weka_accuracy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="arff.html" title="previous chapter">pywekaclassifiers arff documentation</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/classifiers.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Picatureanu Nicusor.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/classifiers.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,874 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pywekaclassifiers.arff &mdash; pywekaclassifiers 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pywekaclassifiers 0.0.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for pywekaclassifiers.arff</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="kn">import</span> <span class="n">Decimal</span>
+
+<span class="kn">from</span> <span class="nn">six</span> <span class="kn">import</span> <span class="n">StringIO</span>
+<span class="kn">from</span> <span class="nn">six</span> <span class="kn">import</span> <span class="n">string_types</span> <span class="k">as</span> <span class="nb">basestring</span> <span class="c1"># pylint: disable=redefined-builtin</span>
+
+<span class="kn">import</span> <span class="nn">dateutil.parser</span>
+
+<span class="n">MISSING</span> <span class="o">=</span> <span class="s1">&#39;?&#39;</span>
+
+<div class="viewcode-block" id="is_numeric"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.is_numeric">[docs]</a><span class="k">def</span> <span class="nf">is_numeric</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">False</span></div>
+
+<span class="n">DENSE</span> <span class="o">=</span> <span class="s1">&#39;dense&#39;</span>
+<span class="n">SPARSE</span> <span class="o">=</span> <span class="s1">&#39;sparse&#39;</span>
+<span class="n">FORMATS</span> <span class="o">=</span> <span class="p">(</span><span class="n">DENSE</span><span class="p">,</span> <span class="n">SPARSE</span><span class="p">)</span>
+
+<span class="n">TYPE_INTEGER</span> <span class="o">=</span> <span class="s1">&#39;integer&#39;</span>
+<span class="n">TYPE_NUMERIC</span> <span class="o">=</span> <span class="s1">&#39;numeric&#39;</span> <span class="c1"># float or integer</span>
+<span class="n">TYPE_REAL</span> <span class="o">=</span> <span class="s1">&#39;real&#39;</span>
+<span class="n">TYPE_STRING</span> <span class="o">=</span> <span class="s1">&#39;string&#39;</span>
+<span class="n">TYPE_NOMINAL</span> <span class="o">=</span> <span class="s1">&#39;nominal&#39;</span>
+<span class="n">TYPE_DATE</span> <span class="o">=</span> <span class="s1">&#39;date&#39;</span>
+<span class="n">TYPES</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">TYPE_INTEGER</span><span class="p">,</span>
+    <span class="n">TYPE_NUMERIC</span><span class="p">,</span>
+    <span class="n">TYPE_STRING</span><span class="p">,</span>
+    <span class="n">TYPE_NOMINAL</span><span class="p">,</span>
+    <span class="n">TYPE_DATE</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">NUMERIC_TYPES</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">TYPE_INTEGER</span><span class="p">,</span>
+    <span class="n">TYPE_NUMERIC</span><span class="p">,</span>
+    <span class="n">TYPE_REAL</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">STRIP_QUOTES_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;^[</span><span class="se">\&#39;\&quot;</span><span class="s1">]|[</span><span class="se">\&#39;\&quot;</span><span class="s1">]$&#39;</span><span class="p">)</span>
+
+<span class="c1">#DEFAULT_DATE_FORMAT = &quot;yyyy-MM-dd&#39;T&#39;HH:mm:ss&quot; # Weka docs say this is the default, but using this causes Weka to throw an java.io.IOException: unparseable date</span>
+<span class="n">DEFAULT_DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;yyyy-MM-dd HH:mm:ss&quot;</span>
+<span class="c1">#DEFAULT_DATE_FORMAT = &quot;%Y-%m-%d %H:%M:%S&quot;</span>
+
+<div class="viewcode-block" id="convert_weka_to_py_date_pattern"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.convert_weka_to_py_date_pattern">[docs]</a><span class="k">def</span> <span class="nf">convert_weka_to_py_date_pattern</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts the date format pattern used by Weka to the date format pattern used by Python&#39;s datetime.strftime().</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># https://docs.python.org/2/library/datetime.html#strftime-strptime-behavior</span>
+    <span class="c1"># https://www.cs.waikato.ac.nz/ml/weka/arff.html</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;yyyy&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;%Y&#39;</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;MM&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;%m&#39;</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;dd&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;HH&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;%H&#39;</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;mm&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;%M&#39;</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;ss&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;%S&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p</span></div>
+
+<div class="viewcode-block" id="cmp"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.cmp">[docs]</a><span class="k">def</span> <span class="nf">cmp</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span> <span class="c1"># pylint: disable=redefined-builtin</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">a</span> <span class="o">&gt;</span> <span class="n">b</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Value"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.Value">[docs]</a><span class="k">class</span> <span class="nc">Value</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base helper class for tagging units of data with an explicit schema type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="s1">&#39;cls&#39;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cls</span> <span class="o">=</span> <span class="bp">cls</span>
+    
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Value</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+    
+    <span class="k">def</span> <span class="fm">__cmp__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Value</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">cmp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+    
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Integer"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.Integer">[docs]</a><span class="k">class</span> <span class="nc">Integer</span><span class="p">(</span><span class="n">Value</span><span class="p">):</span>
+    <span class="n">c_type</span> <span class="o">=</span> <span class="n">TYPE_INTEGER</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="n">MISSING</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Integer</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Integer</span><span class="p">(</span><span class="n">v</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">Integer</span><span class="p">(</span><span class="n">v</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="n">other</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+        
+    <span class="k">def</span> <span class="fm">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Integer</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="n">other</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span></div>
+            
+<span class="n">Int</span> <span class="o">=</span> <span class="n">Integer</span>
+
+<div class="viewcode-block" id="Numeric"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.Numeric">[docs]</a><span class="k">class</span> <span class="nc">Numeric</span><span class="p">(</span><span class="n">Value</span><span class="p">):</span>
+    <span class="n">c_type</span> <span class="o">=</span> <span class="n">TYPE_NUMERIC</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># TODO:causes loss of precision?</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="n">MISSING</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Numeric</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Numeric</span><span class="p">(</span><span class="n">v</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">Numeric</span><span class="p">(</span><span class="n">v</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="n">other</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span> <span class="fm">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="n">other</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+        
+    <span class="k">def</span> <span class="fm">__div__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Numeric</span><span class="p">(</span><span class="n">v</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">Numeric</span><span class="p">(</span><span class="n">v</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="n">other</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+        
+    <span class="k">def</span> <span class="fm">__truediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Numeric</span><span class="p">(</span><span class="n">v</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">Numeric</span><span class="p">(</span><span class="n">v</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="n">other</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span> <span class="fm">__idiv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">/=</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">/=</span> <span class="n">other</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span> <span class="fm">__itruediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">/=</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">/=</span> <span class="n">other</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span></div>
+
+<span class="n">Num</span> <span class="o">=</span> <span class="n">Numeric</span>
+
+<div class="viewcode-block" id="String"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.String">[docs]</a><span class="k">class</span> <span class="nc">String</span><span class="p">(</span><span class="n">Value</span><span class="p">):</span>
+    <span class="n">c_type</span> <span class="o">=</span> <span class="n">TYPE_STRING</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+<span class="n">Str</span> <span class="o">=</span> <span class="n">String</span>
+
+<div class="viewcode-block" id="Nominal"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.Nominal">[docs]</a><span class="k">class</span> <span class="nc">Nominal</span><span class="p">(</span><span class="n">Value</span><span class="p">):</span>
+    <span class="n">c_type</span> <span class="o">=</span> <span class="n">TYPE_NOMINAL</span></div>
+<span class="n">Nom</span> <span class="o">=</span> <span class="n">Nominal</span>
+
+<div class="viewcode-block" id="Date"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.Date">[docs]</a><span class="k">class</span> <span class="nc">Date</span><span class="p">(</span><span class="n">Value</span><span class="p">):</span>
+    <span class="n">c_type</span> <span class="o">=</span> <span class="n">TYPE_DATE</span></div>
+<span class="n">Dt</span> <span class="o">=</span> <span class="n">Date</span>
+
+<span class="n">TYPE_TO_CLASS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">TYPE_INTEGER</span><span class="p">:</span> <span class="n">Integer</span><span class="p">,</span>
+    <span class="n">TYPE_NUMERIC</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span>
+    <span class="n">TYPE_STRING</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+    <span class="n">TYPE_NOMINAL</span><span class="p">:</span> <span class="n">Nominal</span><span class="p">,</span>
+    <span class="n">TYPE_REAL</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span>
+    <span class="n">TYPE_DATE</span><span class="p">:</span> <span class="n">Date</span><span class="p">,</span>
+<span class="p">}</span>
+
+<div class="viewcode-block" id="wrap_value"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.wrap_value">[docs]</a><span class="k">def</span> <span class="nf">wrap_value</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">v</span>
+    <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="n">MISSING</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Num</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Date</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="ArffFile"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile">[docs]</a><span class="k">class</span> <span class="nc">ArffFile</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An ARFF File object describes a data set consisting of a number</span>
+<span class="sd">    of data points made up of attributes. The whole data set is called</span>
+<span class="sd">    a &#39;relation&#39;. Supported attributes are:</span>
+
+<span class="sd">    - &#39;numeric&#39;: floating point numbers</span>
+<span class="sd">    - &#39;string&#39;: strings</span>
+<span class="sd">    - &#39;nominal&#39;: taking one of a number of possible values</span>
+
+<span class="sd">    Not all features of ARFF files are supported yet. The most notable</span>
+<span class="sd">    exceptions are:</span>
+
+<span class="sd">    - no sparse data</span>
+<span class="sd">    - no support for date and relational attributes</span>
+
+<span class="sd">    Also, parsing of strings might still be a bit brittle.</span>
+
+<span class="sd">    You can either load or save from files, or write and parse from a</span>
+<span class="sd">    string.</span>
+
+<span class="sd">    You can also construct an empty ARFF file and then fill in your</span>
+<span class="sd">    data by hand. To define attributes use the define_attribute method.</span>
+
+<span class="sd">    Attributes are:</span>
+
+<span class="sd">    - &#39;relation&#39;: name of the relation</span>
+<span class="sd">    - &#39;attributes&#39;: names of the attributes</span>
+<span class="sd">    - &#39;attribute_types&#39;: types of the attributes</span>
+<span class="sd">    - &#39;attribute_data&#39;: additional data, for example for nominal attributes.</span>
+<span class="sd">    - &#39;comment&#39;: the initial comment in the file. Typically contains some</span>
+<span class="sd">                 information on the data set.</span>
+<span class="sd">    - &#39;data&#39;: the actual data, by data points.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">relation</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct an empty ARFF structure.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relation</span> <span class="o">=</span> <span class="n">relation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        
+        <span class="c1"># Load schema.</span>
+        <span class="k">if</span> <span class="n">schema</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">STRIP_QUOTES_REGEX</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">TYPE_NOMINAL</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        
+<div class="viewcode-block" id="ArffFile.clear"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># [attr_name, attr_name, ...]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span> <span class="c1"># {attr_name:type}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span> <span class="c1"># {attr_name:[nominal values]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">comment</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fout</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">class_attr_name</span> <span class="o">=</span> <span class="bp">None</span></div>
+    
+<div class="viewcode-block" id="ArffFile.get_attribute_value"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.get_attribute_value">[docs]</a>    <span class="k">def</span> <span class="nf">get_attribute_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the value associated with the given value index</span>
+<span class="sd">        of the attribute with the given name.</span>
+<span class="sd">        </span>
+<span class="sd">        This is only applicable for nominal and string types.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="n">MISSING</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="ow">in</span> <span class="n">NUMERIC_TYPES</span><span class="p">:</span>
+            <span class="n">at</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_INTEGER</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">TYPE_NOMINAL</span>
+            <span class="n">cls_index</span><span class="p">,</span> <span class="n">cls_value</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+            <span class="c1">#return self.attribute_data[name][index-1]</span>
+            <span class="k">if</span> <span class="n">cls_value</span> <span class="o">!=</span> <span class="n">MISSING</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">cls_value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> \
+                    <span class="s1">&#39;Predicted value &quot;</span><span class="si">%s</span><span class="s1">&quot; but only values </span><span class="si">%s</span><span class="s1"> are allowed.&#39;</span> \
+                        <span class="o">%</span> <span class="p">(</span><span class="n">cls_value</span><span class="p">,</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">name</span><span class="p">]))</span>
+            <span class="k">return</span> <span class="n">cls_value</span></div>
+    
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="n">named</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^[</span><span class="se">\&#39;</span><span class="s1">\&quot;]|[</span><span class="se">\&#39;</span><span class="s1">\&quot;]$&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">],</span>
+                <span class="n">d</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">named</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">named</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ArffFile.load"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">schema_only</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load an ARFF File from a file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">o</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">schema_only</span><span class="o">=</span><span class="n">schema_only</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">schema_only</span><span class="p">:</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">_filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">a</span></div>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ArffFile.parse"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">schema_only</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse an ARFF File already loaded into a string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;comment&#39;</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">s</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">parseline</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+            <span class="n">a</span><span class="o">.</span><span class="n">lineno</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">schema_only</span> <span class="ow">and</span> <span class="n">a</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
+                <span class="c1"># Don&#39;t parse data if we&#39;re only loading the schema.</span>
+                <span class="k">break</span>
+        <span class="k">return</span> <span class="n">a</span></div>
+
+<div class="viewcode-block" id="ArffFile.copy"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema_only</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a deepcopy of the instance.</span>
+<span class="sd">        If schema_only is True, the data will be excluded from the copy.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">o</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)()</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">relation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relation</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">attributes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">)</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">attribute_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">attribute_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">schema_only</span><span class="p">:</span>
+            <span class="n">o</span><span class="o">.</span><span class="n">comment</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">comment</span><span class="p">)</span>
+            <span class="n">o</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">o</span></div>
+
+<div class="viewcode-block" id="ArffFile.flush"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.flush">[docs]</a>    <span class="k">def</span> <span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ArffFile.open_stream"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.open_stream">[docs]</a>    <span class="k">def</span> <span class="nf">open_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">class_attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fn</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save an arff structure to a file, leaving the file object</span>
+<span class="sd">        open for writing of new data samples.</span>
+<span class="sd">        This prevents you from directly accessing the data via Python,</span>
+<span class="sd">        but when generating a huge file, this prevents all your data</span>
+<span class="sd">        from being stored in memory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fn</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fout_fn</span> <span class="o">=</span> <span class="n">fn</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout_fn</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fout</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fout_fn</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">class_attr_name</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">class_attr_name</span> <span class="o">=</span> <span class="n">class_attr_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">,</span> <span class="n">schema_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">,</span> <span class="n">data_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="ArffFile.close_stream"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.close_stream">[docs]</a>    <span class="k">def</span> <span class="nf">close_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Terminates an open stream and returns the filename</span>
+<span class="sd">        of the file containing the streamed data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">:</span>
+            <span class="n">fout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout</span>
+            <span class="n">fout_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout_fn</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fout</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fout_fn</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">return</span> <span class="n">fout_fn</span></div>
+
+<div class="viewcode-block" id="ArffFile.save"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save an arff structure to a file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filename</span>
+        <span class="n">o</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">())</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ArffFile.write_line"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.write_line">[docs]</a>    <span class="k">def</span> <span class="nf">write_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">SPARSE</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts a single data line to a string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">def</span> <span class="nf">smart_quote</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39; &#39;</span> <span class="ow">in</span> <span class="n">s</span> <span class="ow">and</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;&quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span> <span class="o">%</span> <span class="n">s</span>
+            <span class="k">return</span> <span class="n">s</span>
+        
+        <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="n">DENSE</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">dict</span><span class="p">),</span> <span class="bp">NotImplemented</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">e</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">):</span>
+                <span class="n">at</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">at</span> <span class="ow">in</span> <span class="n">NUMERIC_TYPES</span><span class="p">:</span>
+                    <span class="n">line</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_STRING</span><span class="p">:</span>
+                    <span class="n">line</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">esc</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_NOMINAL</span><span class="p">:</span>
+                    <span class="n">line</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Type &quot;</span> <span class="o">+</span> <span class="n">at</span> <span class="o">+</span> <span class="s2">&quot; not supported for writing!&quot;</span><span class="p">)</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">line</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">s</span>
+        <span class="k">elif</span> <span class="n">fmt</span> <span class="o">==</span> <span class="n">SPARSE</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="p">[]</span>
+            
+            <span class="c1"># Convert flat row into dictionary.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="n">d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+                    <span class="n">at</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">Value</span><span class="p">):</span>
+                        <span class="k">continue</span>
+                    <span class="k">elif</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">==</span> <span class="n">MISSING</span><span class="p">:</span>
+                        <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">Str</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">at</span> <span class="ow">in</span> <span class="p">(</span><span class="n">TYPE_NUMERIC</span><span class="p">,</span> <span class="n">TYPE_REAL</span><span class="p">):</span>
+                        <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">Num</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_STRING</span><span class="p">:</span>
+                        <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">Str</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_INTEGER</span><span class="p">:</span>
+                        <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_NOMINAL</span><span class="p">:</span>
+                        <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nom</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_DATE</span><span class="p">:</span>
+                        <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">Date</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Unknown type: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">at</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">):</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">v</span> <span class="o">==</span> <span class="n">MISSING</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Value</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">MISSING</span><span class="p">):</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="n">MISSING</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">String</span><span class="p">):</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="s1">&#39;&quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span> <span class="o">%</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Date</span><span class="p">):</span>
+                    <span class="n">date_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">DEFAULT_DATE_FORMAT</span><span class="p">)</span>
+                    <span class="n">date_format</span> <span class="o">=</span> <span class="n">convert_weka_to_py_date_pattern</span><span class="p">(</span><span class="n">date_format</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+                        <span class="n">_value</span> <span class="o">=</span> <span class="n">dateutil</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">))</span>
+                        <span class="n">_value</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span>
+                    <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">v</span> <span class="o">=</span> <span class="n">_value</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">date_format</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Value</span><span class="p">):</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span>
+
+                <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="n">MISSING</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">TYPE_NOMINAL</span> <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">name</span><span class="p">]):</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">line</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%i</span><span class="s1"> </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">smart_quote</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">MISSING</span> <span class="ow">in</span> <span class="n">line</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="c1"># Skip lines with nothing other than a missing class.</span>
+                <span class="k">return</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                <span class="c1"># Don&#39;t write blank lines.</span>
+                <span class="k">return</span>
+            <span class="k">return</span> <span class="s1">&#39;{&#39;</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;}&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Uknown format: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">fmt</span><span class="p">,))</span></div>
+
+<div class="viewcode-block" id="ArffFile.write_attributes"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.write_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">write_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fout</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">close</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="n">fout</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">close</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">fout</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+            <span class="n">at</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_INTEGER</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;@attribute &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">esc</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; integer&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">at</span> <span class="ow">in</span> <span class="p">(</span><span class="n">TYPE_NUMERIC</span><span class="p">,</span> <span class="n">TYPE_REAL</span><span class="p">):</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;@attribute &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">esc</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; numeric&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_STRING</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;@attribute &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">esc</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; string&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_NOMINAL</span><span class="p">:</span>
+                <span class="n">nom_vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="k">if</span> <span class="n">_</span> <span class="o">!=</span> <span class="n">MISSING</span><span class="p">]</span>
+                <span class="n">nom_vals</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">nom_vals</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;@attribute &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">esc</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; {&quot;</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">nom_vals</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_DATE</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s1">&#39;@attribute </span><span class="si">%s</span><span class="s1"> date &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">esc</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">DEFAULT_DATE_FORMAT</span><span class="p">)),</span> <span class="nb">file</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Type &quot;</span> <span class="o">+</span> <span class="n">at</span> <span class="o">+</span> <span class="s2">&quot; not supported for writing!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="n">StringIO</span><span class="p">)</span> <span class="ow">and</span> <span class="n">close</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fout</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ArffFile.write"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+        <span class="n">fout</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">fmt</span><span class="o">=</span><span class="n">SPARSE</span><span class="p">,</span>
+        <span class="n">schema_only</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+        <span class="n">data_only</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write an arff structure to a string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="n">schema_only</span> <span class="ow">and</span> <span class="n">data_only</span><span class="p">),</span> <span class="s1">&#39;Make up your mind.&#39;</span>
+        <span class="k">assert</span> <span class="n">fmt</span> <span class="ow">in</span> <span class="n">FORMATS</span><span class="p">,</span> <span class="s1">&#39;Invalid format &quot;</span><span class="si">%s</span><span class="s1">&quot;. Should be one of: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">fmt</span><span class="p">,</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">FORMATS</span><span class="p">))</span>
+        <span class="n">close</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="n">fout</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">close</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">fout</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data_only</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;% &#39;</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">% &quot;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">comment</span><span class="p">)),</span> <span class="nb">file</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;@relation &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">relation</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_attributes</span><span class="p">(</span><span class="n">fout</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">schema_only</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;@data&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="n">line_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_line</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">line_str</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">line_str</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="n">StringIO</span><span class="p">)</span> <span class="ow">and</span> <span class="n">close</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fout</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ArffFile.esc"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.esc">[docs]</a>    <span class="k">def</span> <span class="nf">esc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Escape a string if it contains spaces.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\&#39;</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">s</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\&#39;</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ArffFile.define_attribute"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.define_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">define_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">atype</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Define a new attribute. atype has to be one of &#39;integer&#39;, &#39;real&#39;, &#39;numeric&#39;, &#39;string&#39;, &#39;date&#39; or &#39;nominal&#39;.</span>
+<span class="sd">        For nominal attributes, pass the possible values as data.</span>
+<span class="sd">        For date attributes, pass the format as data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">atype</span> <span class="ow">in</span> <span class="n">TYPES</span><span class="p">,</span> <span class="s2">&quot;Unknown type &#39;</span><span class="si">%s</span><span class="s2">&#39;. Must be one of: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">atype</span><span class="p">,</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">TYPES</span><span class="p">),)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">atype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="ArffFile.parseline"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.parseline">[docs]</a>    <span class="k">def</span> <span class="nf">parseline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;comment&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">l</span> <span class="ow">and</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;%&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">comment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">comment</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">comment</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;in_header&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parseline</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;in_header&#39;</span><span class="p">:</span>
+            <span class="n">ll</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">ll</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;@relation &#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__parse_relation</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ll</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;@attribute &#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__parse_attribute</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ll</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;@data&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">l</span> <span class="ow">and</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;%&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_parse_data</span><span class="p">(</span><span class="n">l</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__parse_relation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l</span><span class="p">):</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relation</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__parse_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[a-zA-Z_][a-zA-Z0-9_\-\[\]]*|\{[^\}]*\}|</span><span class="se">\&#39;</span><span class="s1">[^</span><span class="se">\&#39;</span><span class="s1">]+</span><span class="se">\&#39;</span><span class="s1">|\&quot;[^\&quot;]+\&quot;&#39;</span><span class="p">)</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">l</span><span class="p">)]</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">STRIP_QUOTES_REGEX</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">atype</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="c1">#.lower()</span>
+        <span class="k">if</span> <span class="n">atype</span> <span class="o">==</span> <span class="n">TYPE_INTEGER</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">define_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TYPE_INTEGER</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">atype</span> <span class="o">==</span> <span class="n">TYPE_REAL</span> <span class="ow">or</span> <span class="n">atype</span> <span class="o">==</span> <span class="n">TYPE_NUMERIC</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">define_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TYPE_NUMERIC</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">atype</span> <span class="o">==</span> <span class="n">TYPE_STRING</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">define_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TYPE_STRING</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">atype</span> <span class="o">==</span> <span class="n">TYPE_DATE</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">STRIP_QUOTES_REGEX</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">l</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">define_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TYPE_DATE</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">atype</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;{&#39;</span> <span class="ow">and</span> <span class="n">atype</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;}&#39;</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">atype</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">define_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TYPE_NOMINAL</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Unsupported type &quot;</span> <span class="o">+</span> <span class="n">atype</span> <span class="o">+</span> <span class="s2">&quot; for attribute &quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parse_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">l</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;{&#39;</span><span class="p">):</span>
+                <span class="k">assert</span> <span class="n">l</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;}&#39;</span><span class="p">),</span> <span class="s1">&#39;Malformed sparse data line: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">l</span><span class="p">,)</span>
+                <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">,</span> <span class="bp">NotImplemented</span>
+                <span class="n">dline</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;!</span><span class="se">\\</span><span class="s1">),&#39;</span><span class="p">,</span> <span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">:</span>
+                    <span class="n">index</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(^[0-9]+)\s+(.*)$&#39;</span><span class="p">,</span> <span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">value</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">):</span>
+                        <span class="c1"># Strip quotes.</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+                    <span class="n">ValueClass</span> <span class="o">=</span> <span class="n">TYPE_TO_CLASS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">name</span><span class="p">]]</span>
+                    <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="n">MISSING</span><span class="p">:</span>
+                        <span class="n">dline</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">dline</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueClass</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dline</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Convert string to list.</span>
+                <span class="n">l</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">),</span> \
+                <span class="s2">&quot;Sparse data not supported.&quot;</span>
+            <span class="c1"># Convert dict to list.</span>
+            <span class="c1">#l = dict((k,v) for k,v in l.iteritems())</span>
+            <span class="c1"># Confirm complete feature name overlap.</span>
+            <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">esc</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">l</span><span class="p">)</span> <span class="o">==</span> \
+                <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">esc</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">)</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Otherwise, confirm list.</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">):</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Warning: line </span><span class="si">%d</span><span class="s2"> contains </span><span class="si">%i</span><span class="s2"> values but it should contain </span><span class="si">%i</span><span class="s2"> values&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">)))</span>
+            <span class="k">return</span> 
+
+        <span class="n">datum</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">,</span> <span class="n">l</span><span class="p">):</span>
+            <span class="n">at</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="n">MISSING</span><span class="p">:</span>
+                <span class="n">datum</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_INTEGER</span><span class="p">:</span>
+                <span class="n">datum</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">at</span> <span class="ow">in</span> <span class="p">(</span><span class="n">TYPE_NUMERIC</span><span class="p">,</span> <span class="n">TYPE_REAL</span><span class="p">):</span>
+                <span class="n">datum</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Decimal</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+            <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_STRING</span><span class="p">:</span>
+                <span class="n">datum</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">at</span> <span class="o">==</span> <span class="n">TYPE_NOMINAL</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">n</span><span class="p">]:</span>
+                    <span class="n">datum</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Incorrect value </span><span class="si">%s</span><span class="s1"> for nominal attribute </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">:</span>
+            <span class="c1"># If we&#39;re streaming out data, then don&#39;t even bother saving it to</span>
+            <span class="c1"># memory and just flush it out to disk instead.</span>
+            <span class="n">line_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_line</span><span class="p">(</span><span class="n">datum</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">line_str</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">line_str</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">datum</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__print_warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">((</span><span class="s1">&#39;Warning (line </span><span class="si">%d</span><span class="s1">): &#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span><span class="p">)</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ArffFile.dump"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.dump">[docs]</a>    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Print an overview of the ARFF file.&quot;&quot;&quot;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Relation &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">relation</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;  With attributes&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">!=</span> <span class="n">TYPE_NOMINAL</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2"> of type </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">n</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;    &quot;</span> <span class="o">+</span> <span class="n">n</span> <span class="o">+</span> <span class="s2">&quot; of type nominal with values &quot;</span> <span class="o">+</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">n</span><span class="p">]))</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">d</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="ArffFile.set_class"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.set_class">[docs]</a>    <span class="k">def</span> <span class="nf">set_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="ArffFile.set_nominal_values"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.set_nominal_values">[docs]</a>    <span class="k">def</span> <span class="nf">set_nominal_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">TYPE_NOMINAL</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">values</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="ArffFile.alphabetize_attributes"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.alphabetize_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">alphabetize_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Orders attributes names alphabetically, except for the class attribute, which is kept last.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">name</span><span class="p">:</span> <span class="p">(</span><span class="n">name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_attr_name</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="ArffFile.append"><a class="viewcode-back" href="../../arff.html#pywekaclassifiers.arff.ArffFile.append">[docs]</a>    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">schema_only</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">update_schema</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="n">schema_change</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="c1"># Validate line types against schema.</span>
+            <span class="k">if</span> <span class="n">update_schema</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+                    <span class="n">prior_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">c_type</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Value</span><span class="p">)</span> <span class="k">else</span> <span class="bp">None</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Value</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="n">MISSING</span><span class="p">:</span>
+                            <span class="n">v</span> <span class="o">=</span> <span class="n">Str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;prior_type:&#39;</span><span class="p">,</span> <span class="n">prior_type</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+                            <span class="n">v</span> <span class="o">=</span> <span class="n">TYPE_TO_CLASS</span><span class="p">[</span><span class="n">prior_type</span><span class="p">](</span><span class="n">v</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="n">MISSING</span><span class="p">:</span>
+                        <span class="k">assert</span> <span class="n">prior_type</span> <span class="o">==</span> <span class="n">v</span><span class="o">.</span><span class="n">c_type</span><span class="p">,</span> \
+                            <span class="p">(</span><span class="s1">&#39;Attempting to set attribute </span><span class="si">%s</span><span class="s1"> to type </span><span class="si">%s</span><span class="s1"> but it is already defined as type </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">prior_type</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">c_type</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">:</span>
+                            <span class="c1"># Remove feature that violates the schema</span>
+                            <span class="c1"># during streaming.</span>
+                            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                                <span class="k">del</span> <span class="n">line</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">attribute_types</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">c_type</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                            <span class="n">schema_change</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Nominal</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">:</span>
+                            <span class="c1"># Remove feature that violates the schema</span>
+                            <span class="c1"># during streaming.</span>
+                            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                                    <span class="k">del</span> <span class="n">line</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                            <span class="k">elif</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span>
+                                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                                    <span class="k">del</span> <span class="n">line</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span>
+                            <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">attribute_data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                                <span class="n">schema_change</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">cls</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">class_attr_name</span> <span class="o">=</span> <span class="n">k</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_attr_name</span> <span class="o">==</span> <span class="n">k</span><span class="p">,</span> \
+                                <span class="p">(</span><span class="s1">&#39;Attempting to set class to &quot;</span><span class="si">%s</span><span class="s1">&quot; when it has already been set to &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_attr_name</span><span class="p">)</span>
+                                    
+                    <span class="c1"># Ensure the class attribute is the last one listed,</span>
+                    <span class="c1"># as that&#39;s assumed to be the class unless otherwise specified.</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_attr_name</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">class_attr_name</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">class_attr_name</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                            <span class="k">pass</span>
+                    
+                <span class="k">if</span> <span class="n">schema_change</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">,</span> <span class="s1">&#39;Attempting to add data that doesn</span><span class="se">\&#39;</span><span class="s1">t match the schema while streaming.&#39;</span>
+                    
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">schema_only</span><span class="p">:</span>
+                <span class="c1"># Append line to data set.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">:</span>
+                    <span class="n">line_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_line</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">line_str</span><span class="p">:</span>
+                        <span class="k">print</span><span class="p">(</span><span class="n">line_str</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fout</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parse_data</span><span class="p">(</span><span class="n">line</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Picatureanu Nicusor.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

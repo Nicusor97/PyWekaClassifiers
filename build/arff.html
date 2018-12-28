@@ -1,0 +1,380 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pywekaclassifiers arff documentation &mdash; pywekaclassifiers 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pywekaclassifiers 0.0.1 documentation" href="index.html" />
+    <link rel="next" title="pywekaclassifiers arff documentation" href="classifiers.html" />
+    <link rel="prev" title="Welcome to pywekaclassifiers’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-pywekaclassifiers.arff">
+<span id="pywekaclassifiers-arff-documentation"></span><h1>pywekaclassifiers arff documentation<a class="headerlink" href="#module-pywekaclassifiers.arff" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pywekaclassifiers.arff.ArffFile">
+<em class="property">class </em><code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">ArffFile</code><span class="sig-paren">(</span><em>relation=''</em>, <em>schema=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>An ARFF File object describes a data set consisting of a number
+of data points made up of attributes. The whole data set is called
+a &#8216;relation&#8217;. Supported attributes are:</p>
+<ul class="simple">
+<li>&#8216;numeric&#8217;: floating point numbers</li>
+<li>&#8216;string&#8217;: strings</li>
+<li>&#8216;nominal&#8217;: taking one of a number of possible values</li>
+</ul>
+<p>Not all features of ARFF files are supported yet. The most notable
+exceptions are:</p>
+<ul class="simple">
+<li>no sparse data</li>
+<li>no support for date and relational attributes</li>
+</ul>
+<p>Also, parsing of strings might still be a bit brittle.</p>
+<p>You can either load or save from files, or write and parse from a
+string.</p>
+<p>You can also construct an empty ARFF file and then fill in your
+data by hand. To define attributes use the define_attribute method.</p>
+<p>Attributes are:</p>
+<ul class="simple">
+<li>&#8216;relation&#8217;: name of the relation</li>
+<li>&#8216;attributes&#8217;: names of the attributes</li>
+<li>&#8216;attribute_types&#8217;: types of the attributes</li>
+<li>&#8216;attribute_data&#8217;: additional data, for example for nominal attributes.</li>
+<li><dl class="first docutils">
+<dt>&#8216;comment&#8217;: the initial comment in the file. Typically contains some</dt>
+<dd>information on the data set.</dd>
+</dl>
+</li>
+<li>&#8216;data&#8217;: the actual data, by data points.</li>
+</ul>
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.alphabetize_attributes">
+<code class="descname">alphabetize_attributes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.alphabetize_attributes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.alphabetize_attributes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Orders attributes names alphabetically, except for the class attribute, which is kept last.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.append">
+<code class="descname">append</code><span class="sig-paren">(</span><em>line</em>, <em>schema_only=False</em>, <em>update_schema=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.append"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.append" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.clear">
+<code class="descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.clear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.close_stream">
+<code class="descname">close_stream</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.close_stream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.close_stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terminates an open stream and returns the filename
+of the file containing the streamed data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><em>schema_only=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a deepcopy of the instance.
+If schema_only is True, the data will be excluded from the copy.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.define_attribute">
+<code class="descname">define_attribute</code><span class="sig-paren">(</span><em>name</em>, <em>atype</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.define_attribute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.define_attribute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new attribute. atype has to be one of &#8216;integer&#8217;, &#8216;real&#8217;, &#8216;numeric&#8217;, &#8216;string&#8217;, &#8216;date&#8217; or &#8216;nominal&#8217;.
+For nominal attributes, pass the possible values as data.
+For date attributes, pass the format as data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.dump">
+<code class="descname">dump</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.dump"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.dump" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print an overview of the ARFF file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.esc">
+<code class="descname">esc</code><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.esc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.esc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Escape a string if it contains spaces.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.flush">
+<code class="descname">flush</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.flush"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.flush" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.get_attribute_value">
+<code class="descname">get_attribute_value</code><span class="sig-paren">(</span><em>name</em>, <em>index</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.get_attribute_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.get_attribute_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the value associated with the given value index
+of the attribute with the given name.</p>
+<p>This is only applicable for nominal and string types.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pywekaclassifiers.arff.ArffFile.load">
+<em class="property">classmethod </em><code class="descname">load</code><span class="sig-paren">(</span><em>filename</em>, <em>schema_only=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load an ARFF File from a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.open_stream">
+<code class="descname">open_stream</code><span class="sig-paren">(</span><em>class_attr_name=None</em>, <em>fn=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.open_stream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.open_stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save an arff structure to a file, leaving the file object
+open for writing of new data samples.
+This prevents you from directly accessing the data via Python,
+but when generating a huge file, this prevents all your data
+from being stored in memory.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pywekaclassifiers.arff.ArffFile.parse">
+<em class="property">classmethod </em><code class="descname">parse</code><span class="sig-paren">(</span><em>s</em>, <em>schema_only=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse an ARFF File already loaded into a string.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.parseline">
+<code class="descname">parseline</code><span class="sig-paren">(</span><em>l</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.parseline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.parseline" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save an arff structure to a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.set_class">
+<code class="descname">set_class</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.set_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.set_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.set_nominal_values">
+<code class="descname">set_nominal_values</code><span class="sig-paren">(</span><em>name</em>, <em>values</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.set_nominal_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.set_nominal_values" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>fout=None</em>, <em>fmt='sparse'</em>, <em>schema_only=False</em>, <em>data_only=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write an arff structure to a string.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.write_attributes">
+<code class="descname">write_attributes</code><span class="sig-paren">(</span><em>fout=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.write_attributes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.write_attributes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pywekaclassifiers.arff.ArffFile.write_line">
+<code class="descname">write_line</code><span class="sig-paren">(</span><em>d</em>, <em>fmt='sparse'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#ArffFile.write_line"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.ArffFile.write_line" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a single data line to a string.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pywekaclassifiers.arff.Date">
+<em class="property">class </em><code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">Date</code><span class="sig-paren">(</span><em>v</em>, <em>cls=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#Date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.Date" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="pywekaclassifiers.arff.Date.c_type">
+<code class="descname">c_type</code><em class="property"> = 'date'</em><a class="headerlink" href="#pywekaclassifiers.arff.Date.c_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pywekaclassifiers.arff.Dt">
+<code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">Dt</code><a class="headerlink" href="#pywekaclassifiers.arff.Dt" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pywekaclassifiers.arff.Date" title="pywekaclassifiers.arff.Date"><code class="xref py py-class docutils literal"><span class="pre">Date</span></code></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pywekaclassifiers.arff.Int">
+<code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">Int</code><a class="headerlink" href="#pywekaclassifiers.arff.Int" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pywekaclassifiers.arff.Integer" title="pywekaclassifiers.arff.Integer"><code class="xref py py-class docutils literal"><span class="pre">Integer</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pywekaclassifiers.arff.Integer">
+<em class="property">class </em><code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">Integer</code><span class="sig-paren">(</span><em>v</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#Integer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.Integer" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="pywekaclassifiers.arff.Integer.c_type">
+<code class="descname">c_type</code><em class="property"> = 'integer'</em><a class="headerlink" href="#pywekaclassifiers.arff.Integer.c_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pywekaclassifiers.arff.Nom">
+<code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">Nom</code><a class="headerlink" href="#pywekaclassifiers.arff.Nom" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pywekaclassifiers.arff.Nominal" title="pywekaclassifiers.arff.Nominal"><code class="xref py py-class docutils literal"><span class="pre">Nominal</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pywekaclassifiers.arff.Nominal">
+<em class="property">class </em><code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">Nominal</code><span class="sig-paren">(</span><em>v</em>, <em>cls=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#Nominal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.Nominal" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="pywekaclassifiers.arff.Nominal.c_type">
+<code class="descname">c_type</code><em class="property"> = 'nominal'</em><a class="headerlink" href="#pywekaclassifiers.arff.Nominal.c_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pywekaclassifiers.arff.Num">
+<code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">Num</code><a class="headerlink" href="#pywekaclassifiers.arff.Num" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pywekaclassifiers.arff.Numeric" title="pywekaclassifiers.arff.Numeric"><code class="xref py py-class docutils literal"><span class="pre">Numeric</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pywekaclassifiers.arff.Numeric">
+<em class="property">class </em><code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">Numeric</code><span class="sig-paren">(</span><em>v</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#Numeric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.Numeric" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="pywekaclassifiers.arff.Numeric.c_type">
+<code class="descname">c_type</code><em class="property"> = 'numeric'</em><a class="headerlink" href="#pywekaclassifiers.arff.Numeric.c_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pywekaclassifiers.arff.Str">
+<code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">Str</code><a class="headerlink" href="#pywekaclassifiers.arff.Str" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pywekaclassifiers.arff.String" title="pywekaclassifiers.arff.String"><code class="xref py py-class docutils literal"><span class="pre">String</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pywekaclassifiers.arff.String">
+<em class="property">class </em><code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">String</code><span class="sig-paren">(</span><em>v</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#String"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.String" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="pywekaclassifiers.arff.String.c_type">
+<code class="descname">c_type</code><em class="property"> = 'string'</em><a class="headerlink" href="#pywekaclassifiers.arff.String.c_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pywekaclassifiers.arff.Value">
+<em class="property">class </em><code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">Value</code><span class="sig-paren">(</span><em>v</em>, <em>cls=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#Value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.Value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base helper class for tagging units of data with an explicit schema type.</p>
+<dl class="attribute">
+<dt id="pywekaclassifiers.arff.Value.cls">
+<code class="descname">cls</code><a class="headerlink" href="#pywekaclassifiers.arff.Value.cls" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pywekaclassifiers.arff.Value.value">
+<code class="descname">value</code><a class="headerlink" href="#pywekaclassifiers.arff.Value.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="pywekaclassifiers.arff.cmp">
+<code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">cmp</code><span class="sig-paren">(</span><em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#cmp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.cmp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pywekaclassifiers.arff.convert_weka_to_py_date_pattern">
+<code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">convert_weka_to_py_date_pattern</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#convert_weka_to_py_date_pattern"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.convert_weka_to_py_date_pattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the date format pattern used by Weka to the date format pattern used by Python&#8217;s datetime.strftime().</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pywekaclassifiers.arff.is_numeric">
+<code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">is_numeric</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#is_numeric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.is_numeric" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pywekaclassifiers.arff.wrap_value">
+<code class="descclassname">pywekaclassifiers.arff.</code><code class="descname">wrap_value</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pywekaclassifiers/arff.html#wrap_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pywekaclassifiers.arff.wrap_value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to pywekaclassifiers&#8217;s documentation!</a></li>
+      <li>Next: <a href="classifiers.html" title="next chapter">pywekaclassifiers arff documentation</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/arff.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Picatureanu Nicusor.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/arff.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
