@@ -18,6 +18,9 @@ def get_reqs(*fns):
             lst.append(package.strip())
     return lst
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(name='pywekaclassifiers',
     version=pywekaclassifiers.__version__,
     description='A Python wrapper for the Weka data mining library.',
@@ -25,6 +28,8 @@ setup(name='pywekaclassifiers',
     author_email='nicolaepicatureanu@gmail.com',
     url='https://github.com/Nicusor97/PyWekaClassifiers.git',
     license='MIT License',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     packages=find_packages(),
     package_data={
         'pywekaclassifiers': [
